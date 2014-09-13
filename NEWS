@@ -1,0 +1,38 @@
+nat.templatebrains 0.4.1
+========================
+* fix handling of regName in templatebrain
+* fix as.templatebrain.im3d (completely broken due to variable name error)
+* better defaults in as.templatebrain.im3d / as.templatebrain.character
+  (both name and short name will be take from file name)
+* print.templatebrain now includes short name
+
+nat.templatebrains 0.4
+======================
+* prepare for CRAN release
+* fix export of is.templatebrain
+* give mirror_brain explicit transform argument
+* full examples in mirror_brain and xform_brain functions and
+  templatebrain-meths.
+* add FCWB.demo as data object that can be loaded
+* dev: integrate with nat.flybrains build on travis
+
+nat.templatebrains 0.3
+======================
+* add bridging_sequence function to return a bridging registrations sequence
+  that may span more than 2 template brains.
+* xform_brain can apply compound registrations in one streamxform call
+  (but depends on nat >=1.5.9 and CMTK >= 3.2.2)
+* add is.templatebrain and as.character.templatebrain utility functions.
+* switch to single option regdirs for all paths
+* no longer suggests nat.flybrains but includes basic tests with internal data.
+
+nat.templatebrains 0.2
+======================
+* move all generic functionality from nat.flybrains (which is now a data only
+  package).
+* give xform_brain a via option
+* add options for directories containing bridging and mirroring registrations
+  nb these can accept multiple dirs, but registration names must be globally
+  unique.
+* suggest nat.flybrains for tests
+* package docs and tests
