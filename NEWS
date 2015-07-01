@@ -1,3 +1,23 @@
+nat.templatebrains 0.6
+======================
+* add functions to download new registrations from git repositories:
+  add_reg_folder, download_reg_repo, local_reg_dir_for_url, update_reg_repos.
+* add tests and documentation for new git functionality.
+* downloaded registrations are automatically made available on package load.
+
+nat.templatebrains 0.5
+======================
+* xform_brain can now find the best available path from one template to another
+  automatically.
+* this uses new functions bridging_graph, shortest_bridging_seq and
+  allreg_dataframe
+* xform_brain now has an imagedata argument (to set sensible defaults for
+  handling of inverse registrations, which are very slow for image data)
+* add doi field to templatebrain object
+* fix: mirror_brain passes on transform argument
+* dev: now imports igraph
+* dev: requires nat >=1.7.0
+
 nat.templatebrains 0.4.1
 ========================
 * fix handling of regName in templatebrain
