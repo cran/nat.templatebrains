@@ -39,6 +39,8 @@ download_reg_repo<-function(url, localdir=NULL, ...) {
   if(file.exists(localdir)) {
     update_reg_repos(localdir)
   } else {
+    # ensure that the root directory exists
+    dir.create(dirname(localdir), showWarnings = FALSE, recursive = TRUE)
     git2r::clone(url, localdir, ...)
     add_reg_folders(localdir)
   }
@@ -115,7 +117,6 @@ add_reg_folders<-function(dir=extra_reg_folders(), first=TRUE) {
 #'   for meaning of default.
 #' @export
 #' @seealso \code{\link{download_reg_repo}}
-#' @importFrom rappdirs user_data_dir
 update_reg_repos<-function(x=NULL) {
   if(is.null(x)) {
     x=getOption('nat.templatebrains.regdirs')
@@ -124,7 +125,17 @@ update_reg_repos<-function(x=NULL) {
   if(length(x)>1) return(sapply(x, update_reg_repos))
   repo=try(git2r::repository(x), silent = TRUE)
   if(!inherits(repo, 'try-error'))
-    git2r::pull(repo)
+    git_pull_helper(repo)
+}
+
+git_pull_helper<-function(repo){
+  sig=try(git2r::default_signature(repo), silent = TRUE)
+  if(inherits(sig, 'try-error')){
+    # just make up a user config since we only ever want to pull this repo
+    git2r::config(repo, user.name="Anonymous NAT User",
+                  user.email="nat@anon.org")
+  }
+  git2r::pull(repo)
 }
 
 # make registration url from partial specification to github repository
@@ -159,7 +170,8 @@ make_reg_url<-function(url) {
 #' @importFrom digest digest
 #' @importFrom rappdirs user_data_dir
 local_reg_dir_for_url<-function(url=NULL) {
-  basedir=file.path(user_data_dir("rpkg-nat.templatebrains"), "regfolders")
+  basedir=file.path(user_data_dir("rpkg-nat.templatebrains",appauthor=NULL),
+                    "regfolders")
 
   if(length(url)) {
     sha1s=sapply(url, digest, algo="sha1", serialize=FALSE)
