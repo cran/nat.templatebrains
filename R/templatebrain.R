@@ -112,6 +112,8 @@ as.templatebrain.im3d <- function(x, name=NULL, regName=NULL, ...) {
 #' dim(FCWB.demo)
 #' voxdims(FCWB.demo)
 #' boundingbox(FCWB.demo)
+#' # print method
+#' FCWB.demo
 is.templatebrain<-function(x) inherits(x, 'templatebrain')
 
 #' @description \code{as.character.templatebrain} converts template brain to
@@ -138,6 +140,7 @@ print.templatebrain <- function(x, ...) {
   cat("Short Name:", x$regName, "\n")
   cat("Type:", x$type, "\n")
   cat("Sex: ", x$sex, "\n")
+  cat(sprintf("Dimensions:%d x %d x %d voxels\n", x$dims[1], x$dims[2], x$dims[3]))
   cat(paste0("Voxel size:\n"))
   cat("  x =", paste0(x$voxdims[1], " ", x$units[1], "\n"))
   cat("  y =", paste0(x$voxdims[2], " ", x$units[2], "\n"))
@@ -154,8 +157,9 @@ print.templatebrain <- function(x, ...) {
 }
 
 #' @export
-#' @description \code{as.im3d} converts a template brain to a \code{nat::im3d}
-#'   object; this is probably useful for developers.
+#' @description \code{as.im3d} converts a template brain to a
+#'   \code{nat::\link[nat]{im3d}} object; this is probably useful for
+#'   developers.
 #' @method as.im3d templatebrain
 #' @importFrom nat as.im3d
 #' @rdname templatebrain-meths
@@ -185,8 +189,9 @@ dim.templatebrain <- function(x, ...) {
   dim(nat::as.im3d(x))
 }
 
-#' @description \code{voxdims} extracts the dimensions (in number of pixels) of
-#'   the image associated with a \code{templatebrain} object.
+#' @description \code{voxdims} extracts the dimensions (in calibrated spatial
+#'   units, e.g. microns) of voxels in the image associated with a
+#'   \code{templatebrain} object.
 #' @export
 #' @method voxdims templatebrain
 #' @importFrom nat voxdims
@@ -197,8 +202,8 @@ voxdims.templatebrain <- function(x, ...) {
 }
 
 #' @description \code{boundingbox} extracts the boundingbox (in calibrated
-#'   spatial units, typically microns) of the image associated with a
-#'   templatebrain object. See \code{\link[nat]{boundingbox}} for details.
+#'   spatial units, e.g. microns) of the image associated with a templatebrain
+#'   object. See \code{\link[nat]{boundingbox}} for details.
 #' @export
 #' @method boundingbox templatebrain
 #' @rdname templatebrain-meths

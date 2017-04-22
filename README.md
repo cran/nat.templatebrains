@@ -1,5 +1,5 @@
 # nat.templatebrains
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/nat.templatebrains)](http://cran.r-project.org/web/packages/nat.templatebrains) 
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/nat.templatebrains)](https://cran.r-project.org/package=nat.templatebrains) 
 [![Release Version](https://img.shields.io/github/release/jefferislab/nat.templatebrains.svg)](https://github.com/jefferislab/nat.templatebrains/releases/latest) 
 [![Build Status](https://travis-ci.org/jefferislab/nat.templatebrains.svg)](https://travis-ci.org/jefferislab/nat.templatebrains)
 [![Coverage Status](https://img.shields.io/coveralls/jefferislab/nat.templatebrains.svg)](https://coveralls.io/r/jefferislab/nat.templatebrains?branch=master)
@@ -45,24 +45,25 @@ This is a generic package, usable with data from any species. For _Drosophila_ s
 install/load **nat.templatebrains**.
 
 ## Installation
-This package has now been released to CRAN (v0.4.1), but since this is the first official
-release you may wish to install the development version from GitHub.
+This package has now been released to CRAN (since v0.4.1), but since there are 
+regular updates between CRAN releases we generally recommend that you install 
+the development version from GitHub.
 
 ### CRAN release
 ```r
 install.packages("nat.templatebrains")
 ```
 
+### Development version
+If you want to install the development version of nat.templatebrains, you can do
+this using devtools. You will probably also wish to install the development
+version of the nat package if you do this.
 
-### Bleeding Edge
-You can install the development version by downloading the 
-[tar ball](https://github.com/jefferislab/nat.templatebrains/tarball/master),
-and running `R CMD INSTALL` on it, or (**recommended**) using the **devtools** package:
-
-  ```r
+```r
 if (!require("devtools")) install.packages("devtools")
-devtools::install_github("nat.templatebrains", "jefferislab")
+devtools::install_github("jefferislab/nat")
+devtools::install_github("jefferislab/nat.templatebrains")
 ```
 
-Note: Windows users need [Rtools](http://www.murdoch-sutherland.com/Rtools/) and
-[devtools](http://CRAN.R-project.org/package=devtools) to install this way.
+Note: Windows users need [Rtools](http://www.murdoch-sutherland.com/Rtools/) as 
+well as [devtools](https://CRAN.R-project.org/package=devtools) to install this way.

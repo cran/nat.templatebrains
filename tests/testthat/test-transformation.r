@@ -8,7 +8,8 @@ test_that("we can find registrations",{
 
   td=tempfile(pattern = 'regdir1')
   dir.create(td)
-  options('nat.templatebrains.regdirs'=td)
+  td=normalizePath(td)
+  add_reg_folders(td)
 
   expect_equal(find_reg("rhubarb.list"), "")
   expect_error(find_reg("rhubarb.list", mustWork = TRUE), "Unable to find")
@@ -18,44 +19,67 @@ test_that("we can find registrations",{
   td2=tempfile(pattern = 'regdir2')
   dir.create(file.path(td2, 'rhubarb.list'), recursive = T)
   dir.create(file.path(td2, 'crumble.list'), recursive = T)
+  td2=normalizePath(td2)
 
-  options(nat.templatebrains.regdirs=c(td,td2))
+  add_reg_folders(td2, first = FALSE)
   expect_equal(find_reg("rhubarb.list"), file.path(td,"rhubarb.list"))
   expect_equal(find_reg("crumble.list"), file.path(td2,"crumble.list"))
   unlink(td, recursive = TRUE)
   unlink(td2, recursive = TRUE)
 })
 
+test_that("we can work with reglist objects on disk",{
+  op=options(nat.templatebrains.regdirs=NULL)
+  on.exit(options(op))
+
+  m1=t(rgl::translationMatrix(10, 20, 30))
+  m2=t(rgl::rotationMatrix(10, 1, 2, 3))
+  add_reglist(reglist(m1, m2), reference = "rhubarb", sample="crumble")
+
+  pts=matrix(rnorm(12), ncol=3)
+  m=m2 %*% m1
+
+  expect_equal(xform_brain(pts, reference = 'rhubarb', sample='crumble'),
+    xform(pts, m))
+
+  expect_equal(xform_brain(pts, reference = 'crumble', sample='rhubarb'),
+               xform(pts, solve(m)))
+
+  expect_error(add_reglist(sample='rhubarb'), "reference and sample")
+})
 
 test_that("we can find bridging registrations",{
   td=tempfile(pattern = 'extrabridge')
   dir.create(td)
-  op=options(nat.templatebrains.regdirs=td)
+  td=normalizePath(td)
+  op=options(nat.templatebrains.regdirs=NULL)
   on.exit(options(op))
+  add_reg_folders(td)
 
   rcreg=file.path(td,"rhubarb_crumble.list")
   dir.create(rcreg, recursive = T)
-  expect_true(nzchar(bridging_reg(ref='rhubarb', sample='crumble')))
-  expect_error(bridging_reg(ref='crumble', sample='rhubarb', mustWork = T))
-  expect_false(nzchar(bridging_reg(ref='crumble', sample='rhubarb')))
+  expect_true(nzchar(bridging_reg(reference = 'rhubarb', sample='crumble')))
+  expect_error(bridging_reg(reference = 'crumble', sample='rhubarb', mustWork = T))
+  expect_false(nzchar(bridging_reg(reference = 'crumble', sample='rhubarb')))
 
   br<-bridging_reg(reference ='crumble', sample='rhubarb', checkboth = TRUE)
   expect_true(nzchar(br))
-  expect_true(attr(br,'swapped'))
+  expect_true(attr(br,'swap'))
 
   # now try equivalence of bridging_sequence and bridging_reg
-  expect_equivalent(bridging_sequence(ref="rhubarb", sample = "crumble"),
-                    bridging_reg(ref='rhubarb', sample='crumble'))
-  expect_equivalent(bridging_sequence(ref="crumble", sample = "rhubarb", checkboth = F),
-                    bridging_reg(ref='crumble', sample='rhubarb', checkboth = F))
-  expect_equivalent(bridging_sequence(ref="crumble", sample = "rhubarb", checkboth=T),
-                    bridging_reg(ref='crumble', sample='rhubarb', checkboth=T))
-  expect_error(bridging_sequence(ref='crumble', sample='rhubarb', checkboth = F, mustWork=T))
+  expect_equivalent(bridging_sequence(reference="rhubarb", sample = "crumble"),
+                    reglist(bridging_reg(reference='rhubarb', sample='crumble')))
+  expect_equivalent(bridging_sequence(reference="crumble", sample = "rhubarb", checkboth = F),
+                    reglist(bridging_reg(reference='crumble', sample='rhubarb', checkboth = F)))
+  expect_equivalent(bridging_sequence(reference="crumble", sample = "rhubarb", checkboth=T),
+                    reglist(bridging_reg(reference='crumble', sample='rhubarb', checkboth=T)))
+  expect_error(bridging_sequence(reference='crumble', sample='rhubarb', checkboth = F, mustWork=T))
 })
 
 context("Bridging Graph")
 
 test_that("bridging graph and friends work",{
+  skip_on_cran()
 
   expect_is(emptydf<-allreg_dataframe(NULL), 'data.frame')
   expect_equal(nrow(emptydf), 0L)
@@ -75,50 +99,57 @@ test_that("bridging graph and friends work",{
   # note that dirs are not searched recursively - only the top level is listed
   op=options(nat.templatebrains.regdirs=unique(dirname(df$path)))
   on.exit(options(op), add = TRUE)
+  nat.templatebrains:::reset_cache()
 
   expect_is(df2<-allreg_dataframe(), 'data.frame')
   # maybe dangerous to assume sort order ...
   df=df[match(df$path, df2$path),]
-  expect_equal(df2, df)
+  # if sort order does change, mustn't check rownames or other attributes
+  expect_equivalent(df2, df)
 
-  baseline=structure(file.path(td, "/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nat.flybrains/extdata/bridgingregistrations/FCWB_IS2.list"),
+  baseline=reglist(file.path(td, "/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nat.flybrains/extdata/bridgingregistrations/FCWB_IS2.list"),
     swap = TRUE)
   expect_equal(shortest_bridging_seq('FCWB', 'IS2'), baseline)
-  expect_is(shortest_bridging_seq('FCWB', 'IBN'), 'character')
+  expect_is(shortest_bridging_seq('FCWB', 'IBN'), 'reglist')
   expect_warning(fcwb_ibn<-shortest_bridging_seq('FCWB', 'IBN', imagedata = T),
                  'very slow for image data')
-  bl=structure(c(file.path(td,"/Users/jefferis/Library/Application Support/rpkg-nat.flybrains/regrepos/BridgingRegistrations/JFRC2_FCWB.list"),
-                 file.path(td,"/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nat.flybrains/extdata/bridgingregistrations/JFRC2_IBNWB.list"),
-                 file.path(td,"/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nat.flybrains/extdata/bridgingregistrations/IBNWB_IBN.list")),
-               swap = c(F, T, T))
+
+  # TODO think about normalising handling of swap attribute by reglist and
+  # nat.templatbrains functions (always present? only when T?)
+  bl=reglist(file.path(td,"/Users/jefferis/Library/Application Support/rpkg-nat.flybrains/regrepos/BridgingRegistrations/JFRC2_FCWB.list"),
+             structure(file.path(td,"/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nat.flybrains/extdata/bridgingregistrations/JFRC2_IBNWB.list"),
+                       swap=TRUE),
+             structure(file.path(td,"/Library/Frameworks/R.framework/Versions/3.2/Resources/library/nat.flybrains/extdata/bridgingregistrations/IBNWB_IBN.list"),
+                       swap=TRUE))
   expect_equal(fcwb_ibn, bl)
   expect_error(shortest_bridging_seq('FCWB', 'crumble'))
 })
 
 context("Transformation")
 
-if(is.null(cmtk.bindir())){
-  message("skipping transformation tests since CMTK is not installed")
-} else {
 test_that("can use a bridging registration in regdirs",{
+  if(is.null(cmtk.bindir()))
+    skip("skipping transformation tests since CMTK is not installed")
+
   td=tempfile(pattern = 'extrabridge')
   dir.create(td)
   on.exit(unlink(td, recursive = TRUE))
-  op=options('nat.templatebrains.regdirs'=td)
+  op=options(nat.templatebrains.regdirs=NULL)
+  add_reg_folders(td)
   on.exit(options(op), add = TRUE)
 
   library(rgl)
   library(nat)
   rcreg=file.path(td,"rhubarb_crumble.list")
   m=matrix(c(1,1,1),ncol=3)
-  expect_error(xform_brain(m, ref='rhubarb',sample='crumble'),
+  expect_error(xform_brain(m, reference='rhubarb',sample='crumble'),
                'No bridging registrations')
-  i=identityMatrix()
+
   cmtk.mat2dof(identityMatrix(), rcreg)
-  expect_equal(xform_brain(m, ref='rhubarb',sample='crumble'), m)
+  expect_equal(xform_brain(m, reference='rhubarb',sample='crumble'), m)
 
   # round trip test based on affine component of JFRC2_IS2
-  # x=read.cmtkreg(nat.templatebrains:::bridging_reg(ref=JFRC2, sample=IS2))
+  # x=read.cmtkreg(nat.templatebrains:::bridging_reg(reference=JFRC2, sample=IS2))
   # m=cmtkparams2affmat(x$registration$affine_xform, legacy = T)
 
   jfrc_is2_reg=file.path(td,"JFRC2_IS2.list")
@@ -129,11 +160,11 @@ test_that("can use a bridging registration in regdirs",{
               .Dim = c(4L, 4L))
   cmtk.mat2dof(aff, jfrc_is2_reg)
   points=matrix(c(100, 100, 50), ncol=3)
-  expect_equal(xform_brain(points, ref='JFRC2',sample='JFRC2', via='IS2', checkboth = T), points)
+  expect_equal(xform_brain(points, reference='JFRC2',sample='JFRC2', via='IS2', checkboth = T), points)
 
   # round trip test with neuron and image data representing the neuron
   kc1=kcs20[[1]]
-  kc1.rt=xform_brain(kc1, ref='JFRC2',sample='JFRC2', via='IS2')
+  kc1.rt=xform_brain(kc1, reference='JFRC2',sample='JFRC2', via='IS2')
   kcim=as.im3d(xyzmatrix(kc1), voxdims=c(1, 1, 1),
                BoundingBox=c(250, 410, 0, 130, 0, 120))
   dir.create(td2<-tempfile())
@@ -144,22 +175,27 @@ test_that("can use a bridging registration in regdirs",{
   imfile=file.path(td2, 'kcim.nrrd')
   outfile=file.path(td2, 'kcim_roundtrip.nrrd')
   write.im3d(kcim, imfile, dtype='byte')
-  xform_brain(imfile, ref='JFRC2',sample='JFRC2', via='IS2', output=outfile,
+  xform_brain(imfile, reference='JFRC2',sample='JFRC2', via='IS2', output=outfile,
               target=imfile, checkboth = TRUE, Verbose=F)
   kc2=dotprops(outfile)
   # write an inverted registraion
   cmtk.mat2dof(solve(aff), file.path(td,"IS2_JFRC2.list"))
   outfile2=file.path(td2, 'kcim_roundtrip2.nrrd')
   # check we can still xform image
-  xform_brain(imfile, ref='JFRC2',sample='JFRC2', via='IS2', output=outfile2,
+  xform_brain(imfile, reference='JFRC2',sample='JFRC2', via='IS2', output=outfile2,
               target=imfile, checkboth = TRUE, Verbose=F)
   kc3=dotprops(outfile2)
   # check mean distance between points
-  library(nabor)
-  expect_true(mean(knn(xyzmatrix(kc2), xyzmatrix(kc1), k = 1)$nn.dists)<1.0,
+  expect_true(mean(nabor::knn(xyzmatrix(kc2), xyzmatrix(kc1), k = 1)$nn.dists)<1.0,
               "round trip with cmtk reformatx inversion")
-  expect_true(mean(knn(xyzmatrix(kc3), xyzmatrix(kc1), k = 1)$nn.dists)<1.0,
+  expect_true(mean(nabor::knn(xyzmatrix(kc3), xyzmatrix(kc1), k = 1)$nn.dists)<1.0,
               "round trip with pre-inverted registration")
 })
 
-}
+test_that("mirror using a template brain",{
+  data(FCWB.demo)
+  # Simple mirror along the x i.e. medio-lateral axis
+  expect_is(kcs20.flip <- mirror_brain(kcs20, FCWB.demo, transform='flip'), 'neuronlist')
+  # should be untouched along other 2 axes
+  expect_equal(xyzmatrix(kcs20.flip)[,2:3], xyzmatrix(kcs20)[,2:3])
+})

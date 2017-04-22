@@ -26,7 +26,7 @@ mirror_reg<-function(brain, ...) {
 #' \code{bridging_sequence} produces output like \verb{
 #' list(JFRC2 = structure(
 #'        "/GD/dev/R/nat.flybrains/inst/extdata/bridgingregistrations/JFRC2_IS2.list",
-#'        swapped = TRUE),
+#'        swap = TRUE),
 #'      IS2 = "/GD/dev/R/nat.flybrains/inst/extdata/bridgingregistrations/FCWB_IS2.list")
 #' }
 #' in these circumstances, which xformpoints.cmtkreg turns into "-- JFRC2_IS2.list --inverse FCWB_IS2.list".
@@ -58,13 +58,23 @@ bridging_sequence<-function(sample, reference, via=NULL, imagedata=FALSE,
   simplify_bridging_sequence(seq)
 }
 
-# convert to character vector with swapped attribute if required
-simplify_bridging_sequence<-function(x){
+# convert to well behaved nat::reglist
+simplify_bridging_sequence<-function(x) {
   if(!is.list(x)) stop("simplify_bridging_sequence expects a list!")
-  outseq=as.character(x)
-  swapped=as.logical(lapply(x, function(x) isTRUE(attr(x,'swapped'))))
-  if(any(swapped)) attr(outseq, 'swap')=swapped
-  outseq
+  # convert all elements of x to reglists ...
+  make_reglist <- function(r) {
+    swap=NULL
+    if(is.character(r) && tools::file_ext(r)=="rds"){
+      swap=attr(r, 'swap')
+      r=readRDS(r)
+    }
+    rl=nat::reglist(r)
+    if(isTRUE(swap)) rl=nat::invert_reglist(rl)
+    rl
+  }
+  rlx = lapply(x, make_reglist)
+  # and then join them together into a single reglist
+  do.call(c, rlx)
 }
 
 # return path to bridging registration between template brains
@@ -78,7 +88,7 @@ bridging_reg <- function(sample, reference, checkboth=FALSE, mustWork=FALSE) {
       if(reg==""){
         # try again, marking the registration as swapped
         regname=paste0(sample, "_", reference, ".list")
-        structure(find_reg(regname, mustWork=TRUE), swapped=TRUE)
+        structure(find_reg(regname, mustWork=TRUE), swap=TRUE)
       } else reg
     } else {
       find_reg(regname, mustWork=mustWork)
@@ -133,7 +143,7 @@ find_reg<-function(regname, regdirs=getOption('nat.templatebrains.regdirs'), mus
 #' }
 allreg_dataframe<-function(regdirs=getOption('nat.templatebrains.regdirs')) {
   if(!length(regdirs)) regdirs=character()
-  df=data.frame(path=dir(regdirs, pattern = 'list$', full.names = T),
+  df=data.frame(path=dir(regdirs, pattern = '\\.(list|rds)$', full.names = T),
                 stringsAsFactors = F)
   df$name=basename(df$path)
   df$dup=duplicated(df$name)
@@ -153,7 +163,7 @@ allreg_dataframe<-function(regdirs=getOption('nat.templatebrains.regdirs')) {
 #'   \code{bridging_graph} creates an igraph::graph representing all known
 #'   template brains (vertices) and the bridging registrations connecting them
 #'   (edges).
-#' @details When \code{reciprocal} != NAwe create a graph where each forward
+#' @details When \code{reciprocal != NA} we create a graph where each forward
 #'   transformation is matched by a corresponding inverse transformation with
 #'   the specified edge weight. The edge weight for forward transforms will
 #'   always be 1.0.
@@ -181,16 +191,22 @@ bridging_graph <- function(regdirs=getOption('nat.templatebrains.regdirs'), reci
   if(is.na(reciprocal)){
     g=graph.edgelist(el, directed = T)
     E(g)$path=df$path
-    E(g)$swapped=FALSE
+    E(g)$swap=FALSE
   } else {
     # make reciprocal edges
     el2=rbind(el,el[,2:1])
     g=igraph::graph.edgelist(el2, directed = T)
     E(g)$weight=rep(c(1, reciprocal), rep(nrow(el), 2))
-    E(g)$swapped=rep(c(FALSE, TRUE), rep(nrow(el), 2))
+    E(g)$swap=rep(c(FALSE, TRUE), rep(nrow(el), 2))
     E(g)$path=c(df$path,df$path)
   }
   g
+}
+
+#' @importFrom memoise forget memoise
+reset_cache <- function() {
+  memoise::forget(shortest_bridging_seq)
+  memoise::memoise(shortest_bridging_seq)
 }
 
 #' @description \code{shortest_bridging_seq} finds the shortest bridging
@@ -230,9 +246,9 @@ shortest_bridging_seq <-
     epath = gsp$epath[[1]]
     seq=mapply(function(x,y) {
       if (y)
-        attr(x,'swapped') = y;x
+        attr(x,'swap') = y;x
     },
-    E(g)[epath]$path, E(g)[epath]$swapped,
+    E(g)[epath]$path, E(g)[epath]$swap,
     USE.NAMES = F, SIMPLIFY = F)
     simplify_bridging_sequence(seq)
   }
@@ -267,11 +283,12 @@ shortest_bridging_seq <-
 #' @param via optional intermediate brain to use when there is no direct
 #'   bridging registration.
 #' @param imagedata Whether \code{x} should be treated as image data (presently
-#'   only supported as a file on disk or 3D object vertices - see details).
+#'   only supported as a file on disk) or 3D object vertices - see details.
 #' @param checkboth When \code{TRUE} will look for registrations in both
 #'   directions. See details.
 #' @param ... extra arguments to pass to \code{\link[nat]{xform}}.
 #' @export
+#' @seealso \code{\link{mirror_brain}}, \code{\link{regtemplate}}
 #' @examples
 #' ## depends on nat.flybrains package and system CMTK installation
 #' \dontrun{
@@ -311,8 +328,11 @@ shortest_bridging_seq <-
 #' # use binary mask to restrict (and speed up) reformatting
 #' xform_brain('in.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd', mask='neuropil.nrrd')
 #' }
-xform_brain <- function(x, sample, reference, via=NULL,
+xform_brain <- function(x, sample=regtemplate(x), reference, via=NULL,
                         imagedata=is.character(x), checkboth=NULL, ...) {
+  if(is.null(sample))
+    stop("Invalid sample argument!\n",
+         "Either specify manually or use regtemplate(x) <- to set space for x.")
   if(is.null(via)) {
     # use bridging_graph, with checkboth = TRUE
     if(is.null(checkboth)) checkboth=TRUE
@@ -325,7 +345,10 @@ xform_brain <- function(x, sample, reference, via=NULL,
     regs <- bridging_sequence(reference=reference, sample=sample, via=via,
                               checkboth = checkboth, mustWork = T)
   }
-  nat::xform(x, reg=regs, ...)
+  xt=nat::xform(x, reg=regs, ...)
+  # always set space if this is a complex object otherwise only on input
+  if(is.object(x) || !is.null(regtemplate(x))) regtemplate(xt)=reference
+  xt
 }
 
 #' Mirror 3D object around a given axis, optionally using a warping registration
@@ -336,6 +359,7 @@ xform_brain <- function(x, sample, reference, via=NULL,
 #' @param transform whether to use warp (default) or affine component of
 #'   registration, or simply flip about midplane of axis.
 #' @param ... extra arguments to pass to \code{\link[nat]{mirror}}.
+#' @seealso \code{\link{xform_brain}}, \code{\link{regtemplate}}
 #' @export
 #' @examples
 #' data(FCWB.demo)
@@ -374,12 +398,18 @@ xform_brain <- function(x, sample, reference, via=NULL,
 #' diffs=xyzmatrix(kcs20.jfrc2.flip)-xyzmatrix(kcs20.jfrc2.right)
 #' hist(sqrt(rowSums(diffs^2)), xlab='Distance /microns')
 #' }
-mirror_brain <- function(x, brain, mirrorAxis=c("X","Y","Z"),
+mirror_brain <- function(x, brain=regtemplate(x), mirrorAxis=c("X","Y","Z"),
                          transform = c("warp", "affine", "flip"), ...) {
   transform=match.arg(transform)
+  if(is.null(brain))
+    stop("Invalid brain argument!\n",
+         "Either specify manually or use regtemplate(x) <- to set space for x.")
   warpfile <- if(transform=="flip") NULL else mirror_reg(brain)
   mirrorAxis <- match.arg(mirrorAxis)
   axisCol <- which(mirrorAxis == c("X", "Y", "Z"))
   mirrorAxisSize <- sum(brain$BoundingBox[1:2, axisCol])
-  nat::mirror(x, mirrorAxisSize=mirrorAxisSize, mirrorAxis=mirrorAxis, warpfile=warpfile, transform=transform, ...)
+  xm=nat::mirror(x, mirrorAxisSize=mirrorAxisSize, mirrorAxis=mirrorAxis, warpfile=warpfile, transform=transform, ...)
+  # always set space if this is a complex object otherwise only on input
+  regtemplate(xm) <- if(is.object(x)) brain else regtemplate(x)
+  xm
 }
