@@ -62,6 +62,9 @@ test_that("we can find bridging registrations",{
   expect_error(bridging_reg(reference = 'crumble', sample='rhubarb', mustWork = T))
   expect_false(nzchar(bridging_reg(reference = 'crumble', sample='rhubarb')))
 
+  expect_error(xform_brain(kcs20, sample='pie', ref='rhubarb'),
+               regexp = "no known bridging registrations")
+
   br<-bridging_reg(reference ='crumble', sample='rhubarb', checkboth = TRUE)
   expect_true(nzchar(br))
   expect_true(attr(br,'swap'))
@@ -190,6 +193,16 @@ test_that("can use a bridging registration in regdirs",{
               "round trip with cmtk reformatx inversion")
   expect_true(mean(nabor::knn(xyzmatrix(kc3), xyzmatrix(kc1), k = 1)$nn.dists)<1.0,
               "round trip with pre-inverted registration")
+})
+
+test_that("xform doesn't try to transform when sample==reference", {
+  op=options(nat.templatebrains.regdirs=NULL)
+  on.exit(options(op))
+
+  data("FCWB.demo")
+  kcs3=kcs20[1:3]
+  regtemplate(kcs3)=FCWB.demo
+  expect_equivalent(kcs3t <- xform_brain(kcs3, reference = FCWB.demo), kcs3)
 })
 
 test_that("mirror using a template brain",{

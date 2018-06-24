@@ -50,6 +50,8 @@ bridging_sequence<-function(sample, reference, via=NULL, imagedata=FALSE,
   }
   # TODO check this order carefully, especially with multiple via brains
   all_brains=c(as.character(sample), via, as.character(reference))
+  if(length(unique(all_brains))==1)
+    return(NULL) # nothing to do
   seq=mapply(bridging_reg,
          sample=all_brains[-length(all_brains)],
          reference=all_brains[-1],
@@ -213,7 +215,7 @@ reset_cache <- function() {
 #'   sequence on a graph of all available bridging registrations, subject to
 #'   constraints defined by graph connectivity and the \code{reciprocal
 #'   parameter}.
-#' @importFrom igraph shortest.paths get.shortest.paths E
+#' @importFrom igraph shortest.paths get.shortest.paths E vertex_attr
 #' @export
 #' @inheritParams xform_brain
 #' @examples
@@ -227,10 +229,23 @@ shortest_bridging_seq <-
     reciprocal <- if (checkboth && is.na(reciprocal)) {
       ifelse(imagedata, 100, 1.01)
     } else NA
-    g = bridging_graph(reciprocal = reciprocal, ...)
-    if(is.null(g)) stop("No bridging registrations available!")
+
     sample = as.character(sample)
     reference = as.character(reference)
+
+    # nothing to do ...
+    if(isTRUE(all.equal(sample, reference, check.attributes=FALSE)))
+      return(NULL)
+
+    g = bridging_graph(reciprocal = reciprocal, ...)
+    if(is.null(g)) stop("No bridging registrations available!")
+    vertex_names <- vertex_attr(g, "name")
+    if (!sample %in% vertex_names)
+      stop("Sample template: ", sample,
+           " has no known bridging registrations!")
+    if (!reference %in% vertex_names)
+      stop("Reference template: ", reference,
+           " has no known bridging registrations!")
 
     # treat as directed
     sp = shortest.paths(g, v = sample, to = reference, mode = 'out')
@@ -345,7 +360,7 @@ xform_brain <- function(x, sample=regtemplate(x), reference, via=NULL,
     regs <- bridging_sequence(reference=reference, sample=sample, via=via,
                               checkboth = checkboth, mustWork = T)
   }
-  xt=nat::xform(x, reg=regs, ...)
+  xt <- if(is.null(regs)) x else nat::xform(x, reg=regs, ...)
   # always set space if this is a complex object otherwise only on input
   if(is.object(x) || !is.null(regtemplate(x))) regtemplate(xt)=reference
   xt
