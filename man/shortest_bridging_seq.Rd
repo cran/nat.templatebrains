@@ -5,11 +5,20 @@
 \alias{shortest_bridging_seq}
 \title{Make or query connected graph of bridging registrations}
 \usage{
-bridging_graph(regdirs = getOption("nat.templatebrains.regdirs"),
-  reciprocal = NA)
+bridging_graph(
+  regdirs = getOption("nat.templatebrains.regdirs"),
+  reciprocal = NA
+)
 
-shortest_bridging_seq(sample, reference, checkboth = TRUE,
-  imagedata = FALSE, reciprocal = NA, ...)
+shortest_bridging_seq(
+  sample,
+  reference,
+  via = NULL,
+  checkboth = TRUE,
+  imagedata = FALSE,
+  reciprocal = NA,
+  ...
+)
 }
 \arguments{
 \item{regdirs}{Character vector of directories to search for registrations
@@ -18,10 +27,14 @@ shortest_bridging_seq(sample, reference, checkboth = TRUE,
 \item{reciprocal}{Sets the weight of reciprocal edges in the graph (and
 thereby whether inverse registrations will be considered).}
 
-\item{sample}{Source template brain (e.g. IS2) that data is currently in.}
+\item{sample}{Source template brain (e.g. IS2) that data is currently in.
+Specified either as character vector or a \code{templatebrain} object.}
 
 \item{reference}{Target template brain (e.g. IS2) that data should be
 transformed into.}
+
+\item{via}{(optional) intermediate template brain that the registration
+sequence must pass through.}
 
 \item{checkboth}{When \code{TRUE} will look for registrations in both
 directions. See details.}
@@ -29,7 +42,7 @@ directions. See details.}
 \item{imagedata}{Whether \code{x} should be treated as image data (presently
 only supported as a file on disk) or 3D object vertices - see details.}
 
-\item{...}{extra arguments to pass to \code{\link[nat]{xform}}.}
+\item{...}{additional arguments passed on to \code{\link{bridging_graph}}}
 }
 \description{
 These functions are designed for expert use. In general it is
@@ -54,16 +67,18 @@ When \code{reciprocal != NA} we create a graph where each forward
 }
 \examples{
 \dontrun{
+plot(bridging_graph(), vertex.size=25, edge.arrow.size=0.5)
+# with reciprocal edges
 plot(bridging_graph(reciprocal=3), vertex.size=25)
-# the same including
-plot(bridging_graph(), vertex.size=25)
 }
 \dontrun{
 shortest_bridging_seq(FCWB, IS2)
 # or
 shortest_bridging_seq('FCWB', 'IS2')
+
+shortest_bridging_seq(sample='FCWB', reference='IS2', via="JFRC2")
 }
 }
 \seealso{
-\code{\link{allreg_dataframe}}
+\code{\link{allreg_dataframe}}, \code{\link{xform_brain}}
 }

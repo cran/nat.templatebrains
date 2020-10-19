@@ -4,19 +4,29 @@
 \alias{xform_brain}
 \title{Transform 3D object between template brains}
 \usage{
-xform_brain(x, sample = regtemplate(x), reference, via = NULL,
-  imagedata = is.character(x), checkboth = NULL, ...)
+xform_brain(
+  x,
+  sample = regtemplate(x),
+  reference,
+  via = NULL,
+  imagedata = is.character(x),
+  checkboth = NULL,
+  target = NULL,
+  Verbose = interactive(),
+  ...
+)
 }
 \arguments{
 \item{x}{the 3D object to be transformed}
 
-\item{sample}{Source template brain (e.g. IS2) that data is currently in.}
+\item{sample}{Source template brain (e.g. IS2) that data is currently in.
+Specified either as character vector or a \code{templatebrain} object.}
 
 \item{reference}{Target template brain (e.g. IS2) that data should be
 transformed into.}
 
-\item{via}{optional intermediate brain to use when there is no direct
-bridging registration.}
+\item{via}{(optional) intermediate template brain that the registration
+sequence must pass through.}
 
 \item{imagedata}{Whether \code{x} should be treated as image data (presently
 only supported as a file on disk) or 3D object vertices - see details.}
@@ -24,7 +34,14 @@ only supported as a file on disk) or 3D object vertices - see details.}
 \item{checkboth}{When \code{TRUE} will look for registrations in both
 directions. See details.}
 
-\item{...}{extra arguments to pass to \code{\link[nat]{xform}}.}
+\item{target}{When transforming image data, this specifies the target space
+(defaults to \code{reference} when \code{imagedata=TRUE}). See Details.}
+
+\item{Verbose}{Whether to show a message with the sequence of template brains}
+
+\item{...}{extra arguments to pass to \code{\link[nat]{xform}} and then on to
+\code{\link[nat]{xformpoints}} or \code{\link[nat]{xformimage}} which will
+eventually hand off to \code{\link{cmtk.reformatx}} when using CMTK.}
 }
 \description{
 Transform 3D object between template brains
@@ -34,6 +51,25 @@ NB the \code{sample}, \code{reference} and \code{via} brains can
   either be \code{templatebrain} objects or a character string containing the
   short name of the template e.g. \code{"IS2"}.
 
+  \code{xform_brain} uses the helper function
+  \code{\link{shortest_bridging_seq}} to find the shortest path between
+  different template brains based on the set of bridging registrations that
+  the natverse has been informed about (see \code{\link{bridging_graph}}).
+  You can specify a \code{via} argument to ensure that the registrations
+  passes through one or more intermediate templates. Note that when multiple
+  brains are passed to \code{via} they should be in order from sample to
+  reference. If you are passing multiple \code{\link{templatebrain}} objects,
+  they must be wrapped in a list.
+
+  When transforming image data (\code{imagedata=TRUE}), the \code{target}
+  argument should normally be specified. This defines the absolute/voxel
+  dimensions of the target space. This can be calculated from a
+  \code{templatebrain} object, so by default it will be set to the value of
+  the \code{reference} argument. Alternatively an image file on disk can be
+  specified; this is essential if the \code{reference} argument does not
+  specify a \code{\link{templatebrain}} object but instead just names a
+  template space (i.e. is a string).
+
   The significance of the \code{imagedata} and \code{checkboth} arguments is
   that CMTK registrations are not directly invertible although they can be
   numerically inverted in most cases (unless there are regions where folding
@@ -41,15 +77,8 @@ NB the \code{sample}, \code{reference} and \code{via} brains can
 
   You can control whether you want to allow inverse registrations manually by
   setting \code{checkboth} explicitly. Otherwise when \code{checkboth=NULL}
-  the following default behaviour occurs: \itemize{
-
-  \item when \code{via=NULL} \code{checkboth=T} but a warning will be given
-  if an inversion must be used.
-
-  \item when \code{via} is specified then \code{checkboth=T} but a warning
-  will be given if an inversion must be used.
-
-  }
+  the default is to act as if \code{checkboth=T} but issue a warning if an
+  inversion must be used.
 }
 \examples{
 ## depends on nat.flybrains package and system CMTK installation
@@ -62,7 +91,7 @@ nopen3d()
 plot3d(kcs20)
 plot3d(FCWB)
 # Convert to JFCR2 template brain
-kcs20.jfrc2=xform_brain(kcs20, sample = FCWB, reference=JFRC2, .progress='text')
+kcs20.jfrc2=xform_brain(kcs20, sample = FCWB, reference=JFRC2)
 # now plot in the new JFRC2 space
 nopen3d()
 plot3d(kcs20.jfrc2)
@@ -74,23 +103,37 @@ clear3d()
 plot3d(kcs20.jfrc2)
 # nb "MB.*_L" is a regular expression
 plot3d(JFRC2NP.surf, "MB.*_L", alpha=0.3)
-# compare with originals - briging registration is no perfect in peduncle
+# compare with originals - bridging registration is no perfect in peduncle
 nopen3d()
 plot3d(kcs20)
 plot3d(FCWBNP.surf, "MB.*_L", alpha=0.3)
 
+# insist on using a specific intermediate template brain
+# this would nor be an improvement in this case
+kcs20.jfrc2viais2=xform_brain(kcs20, sample = FCWB, via=IS2, reference=JFRC2)
+
 
 ## reformat image examples
-# see ?cmtk.reformatx for details of all additional arguments
-xform_brain('in.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd', Verbose=F)
+# see ?cmtk.reformatx for details of any additional arguments
+# note that for image data a target space defining the dimensions of the
+# output image must be specified - this happens by default using the
+# reference templatebrain object
+xform_brain('in.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd')
+# or you can specify an image file explicitly as target
+xform_brain('in.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd',
+            target='JFRC2.nrrd')
 
-# use nearest neighbour interpolation for label field
-xform_brain('labels.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd', interpolation='nn')
+# use partial volume interpolation for label field
+xform_brain('labels.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd',
+            interpolation='pv')
 
 # use binary mask to restrict (and speed up) reformatting
 xform_brain('in.nrrd', sample=FCWB, ref=JFRC2, output='out.nrrd', mask='neuropil.nrrd')
 }
 }
 \seealso{
-\code{\link{mirror_brain}}, \code{\link{regtemplate}}
+\code{\link{mirror_brain}}, \code{\link{shortest_bridging_seq}}
+  \code{\link{bridging_graph}}, \code{\link{regtemplate}},
+  \code{\link{xform}}. \code{\link{xformpoints}}, \code{\link{xformimage}},
+  \code{\link{cmtk.reformatx}} (for transforming image data with CMTK).
 }

@@ -1,3 +1,17 @@
+# nat.templatebrains 1.0
+
+* Flexible `via` specification for `xform_brain()` / `shortest_bridging_seq()`.
+  This should allow one to choose particular groups of bridging registration 
+  (e.g. those using the JRC2018F template) even if they are not the shortest
+  possible path between sample and reference brain (#43)
+* Add `all_templatebrains()` which searches across all packages to find template
+  brains and `guess_templatebrain()` which tries to match an image on disk to a
+  `templatebrain()` (#35)
+* xform_brain should not require an explicit target specification for image data
+  bug (#16)
+* fix bugs in `all_templatebrains()` and therefore in `guess_templatebrain()`
+  which should now be fast and functional again (#47)
+
 # nat.templatebrains 0.9
 
 * shortest_bridging_seq complains if template brain does not exist in graph (#34)
@@ -42,7 +56,7 @@ changes under the hood, hence the major version bump.
 * add support for reglist objects containing one or more arbitrary transforms
   as bridging or mirroring registrations. A function add_reglist makes it easy
   to add new in memory reglist objects to those that can be used for bridging
-  / mirroing between template brains (#21).
+  / mirroring between template brains (#21).
 
 # nat.templatebrains 0.6.2
 

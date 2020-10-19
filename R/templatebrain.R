@@ -8,7 +8,7 @@
 #'
 #' A variety of methods are available to work on \code{templatebrain} objects. See
 #' \code{\link{templatebrain-meths}} for basic methods. The two main functions
-#' that are availavle for using template brains are \code{\link{xform_brain}} and
+#' that are available for using template brains are \code{\link{xform_brain}} and
 #' \code{\link{mirror_brain}}.
 #'
 #' \code{templatebrain} objects are only useful for transformation processes
@@ -32,6 +32,7 @@
 #' @param BoundingBox physical dimensions of the image (see
 #'   \code{\link[nat]{boundingbox}}).
 #' @param voxdims physical spacing between voxels.
+#' @param origin the physical location of the first voxel
 #' @param units units of physical measurements (e.g. microns).
 #' @param description details of the template.
 #' @param doi a DOI for the original template brain image.
@@ -43,8 +44,8 @@
 #' @seealso \code{\link{as.templatebrain}}, \code{\link{templatebrain-meths}},
 #'   \code{\link{xform_brain}}, \code{\link{mirror_brain}}.
 templatebrain<-function(name, regName=name, type=NULL, sex=NULL, dims=NULL,
-                        BoundingBox=NULL, voxdims=NULL, units=NULL,
-                        description=NULL, doi=NULL, ...) {
+                        BoundingBox=NULL, voxdims=NULL, origin=NULL,
+                        units=NULL, description=NULL, doi=NULL, ...) {
   template <- structure(list(name=name, regName=regName, type=type, sex=sex,
                              dims=dims, voxdims=voxdims, origin=origin,
                              BoundingBox=BoundingBox, units=units,
@@ -67,7 +68,7 @@ templatebrain<-function(name, regName=name, type=NULL, sex=NULL, dims=NULL,
 #' @return A list with class \code{\link{templatebrain}}
 #' @details \code{as.templatebrain} can extract the key fields defining an
 #'   template space from an image file. This is generally a much more convenient
-#'   apprach to defining a \code{templatebrain} object than specifying all
+#'   approach to defining a \code{templatebrain} object than specifying all
 #'   fields by hand.
 #'
 #' @export
@@ -95,16 +96,22 @@ as.templatebrain.character <- function(x, ...) {
 as.templatebrain.im3d <- function(x, regName=NULL, name=regName, ...) {
   # This will be incorrect if the directions are not rectilinear
   xfile=attr(x, 'file')
-  if(is.null(xfile)) {
-    if(is.null(regName)) stop("regName is null and x does not have a file attribute!")
+  if(is.null(regName)) {
+    if(is.null(xfile)) {
+      stop("regName is null and x does not have a file attribute!")
+    }
+    regName = sub("\\.[^.]+$", "", basename(xfile))
   }
-  else regName = sub("\\.[^.]+$", "", basename(xfile))
 
   units <- attr(x, 'header')$'space units'
   templatebrain(name=name, regName=regName, dims=dim(x), voxdims=voxdims(x),
                 origin=origin(x), BoundingBox=boundingbox(x),
                 units=units, ...)
 }
+
+#' @rdname as.templatebrain
+#' @export
+as.templatebrain.templatebrain <- function(x, ...) x
 
 #' Template brain methods
 #'

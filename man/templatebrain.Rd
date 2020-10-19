@@ -4,9 +4,20 @@
 \alias{templatebrain}
 \title{Construct templatebrain object for an image registration template}
 \usage{
-templatebrain(name, regName = name, type = NULL, sex = NULL,
-  dims = NULL, BoundingBox = NULL, voxdims = NULL, units = NULL,
-  description = NULL, doi = NULL, ...)
+templatebrain(
+  name,
+  regName = name,
+  type = NULL,
+  sex = NULL,
+  dims = NULL,
+  BoundingBox = NULL,
+  voxdims = NULL,
+  origin = NULL,
+  units = NULL,
+  description = NULL,
+  doi = NULL,
+  ...
+)
 }
 \arguments{
 \item{name}{the full name of the template.}
@@ -28,6 +39,8 @@ of multiple images.}
 \code{\link[nat]{boundingbox}}).}
 
 \item{voxdims}{physical spacing between voxels.}
+
+\item{origin}{the physical location of the first voxel}
 
 \item{units}{units of physical measurements (e.g. microns).}
 
@@ -51,7 +64,7 @@ file or an im3d object into a \code{templatebrain}}.
 \details{
 A variety of methods are available to work on \code{templatebrain} objects. See
 \code{\link{templatebrain-meths}} for basic methods. The two main functions
-that are availavle for using template brains are \code{\link{xform_brain}} and
+that are available for using template brains are \code{\link{xform_brain}} and
 \code{\link{mirror_brain}}.
 
 \code{templatebrain} objects are only useful for transformation processes
