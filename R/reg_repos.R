@@ -13,6 +13,8 @@
 #'   credentials for private repo.
 #' @seealso \code{\link{add_reg_folders}}, \code{\link{local_reg_dir_for_url}},
 #'   \code{git2r::\link[git2r]{clone}}
+#' @return This function is principally called for its side effect. A path to
+#'   the location on disk containing added registrations is returned invisibly.
 #' @examples
 #' ## find the root location of all registration directories
 #' local_reg_dir_for_url()
@@ -75,6 +77,8 @@ download_reg_repo<-function(url, localdir=NULL, ...) {
 #' @param first Whether the new folder should be added to the start (default) or
 #'   end of the search list.
 #' @export
+#' @return This function is principally called for its side effect. A path to
+#'   the location on disk containing added registrations is returned invisibly.
 #' @examples
 #'
 #' \dontrun{
@@ -126,6 +130,7 @@ add_reg_folders<-function(dir=extra_reg_folders(), first=TRUE) {
 #'   \code{TRUE}.
 #' @param ... Additional arguments passed to \code{\link{saveRDS}} e.g. to
 #'   control compression when the reglist object is saved to disk.
+#' @return This function is called for its side effect and has no return value.
 #' @export
 #' @seealso add_reg_folders
 #' @examples
@@ -173,6 +178,9 @@ add_reglist <- function(x, reference=NULL, sample=NULL, mirror=NULL, temp=TRUE,
 #'
 #' @param x Path to local checkout of a registration git repository. See details
 #'   for meaning of default.
+#' @return This function is principally called for its side effect, but does
+#'   return a \code{git2r::repository} object containing the path on disk to the
+#'   location of the git repository with registration.
 #' @export
 #' @seealso \code{\link{download_reg_repo}}
 update_reg_repos<-function(x=NULL) {
@@ -213,10 +221,12 @@ make_reg_url<-function(url) {
 #'   a github repository such as this one of ours:.
 #'   \href{https://github.com/jefferislab/BridgingRegistrations}{jefferislab/BridgingRegistrations}
 #'
-#'
 #'   Note that this folder will always be the same place on a machine i.e. this
 #'   defines a consistent, persistent location on disk to store data across
-#'   sessions.
+#'   sessions. You can modify the location of this folder by editing the
+#'   \code{R_USER_DATA_DIR} environment variable. While this is not recommended
+#'   on a personal machine, it may be necessary on a server. See
+#'   \code{rappdirs::\link{user_data_dir}} for details.
 #'
 #'   When called with a url, a SHA1 hash will be calculated for the URL and
 #'   appended to the basepath. This should ensure that locations derived from
@@ -224,13 +234,15 @@ make_reg_url<-function(url) {
 #'
 #' @param url Character vector containing a url. When \code{url=NULL} defaults
 #'   to giving the base path.
+#' @return path(s) containing registrations on disk.
 #' @export
-#' @seealso \code{\link{download_reg_repo}}
+#' @seealso \code{\link{download_reg_repo}},
+#'   \code{rappdirs::\link{user_data_dir}}
 #' @importFrom digest digest
 #' @importFrom rappdirs user_data_dir
 local_reg_dir_for_url<-function(url=NULL) {
-  basedir=file.path(user_data_dir("rpkg-nat.templatebrains",appauthor=NULL),
-                    "regfolders")
+  udd=path.expand(user_data_dir("rpkg-nat.templatebrains", appauthor=NULL))
+  basedir=file.path(udd,"regfolders")
 
   if(length(url)) {
     sha1s=sapply(url, digest, algo="sha1", serialize=FALSE)
