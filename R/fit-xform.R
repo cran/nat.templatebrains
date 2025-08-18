@@ -1,14 +1,14 @@
 #' Fit affine or thin plate spline transform to arbitrary transformation
 #'
-#' @param reg Any registration compatible with \code{nat::\link{xform}},
+#' @param reg Any registration compatible with \code{nat::\link[nat]{xform}},
 #'   including non-rigid and multi-step registrations. You must either supply
 #'   this or the \code{refpts} argument.
 #' @param samplepts A set of points in the sample (floating) space. Can be any
-#'   object compatible with \code{nat::\link{xyzmatrix}}.
+#'   object compatible with \code{nat::\link[nat]{xyzmatrix}}.
 #' @param refpts An optional set of points in the target (fixed) space matching
 #'   \code{samplepts}. You must either supply this or the \code{reg} argument.
 #' @param type A character string specifying the type of registration. See
-#'   \code{\link{computeTransform}} for details.
+#'   \code{Morpho::computeTransform} for details.
 #' @param scale a 2-vector indicating the amount to scale the sample and
 #'   reference points. You can supply one vector if this is the same. If the
 #'   transform expects points in microns and returns points in microns then you
@@ -17,11 +17,14 @@
 #' @param subsample A number of points to subsample from
 #'   \code{samplepts,refpts}. The default value of \code{FALSE} means use all
 #'   provided points to calculate the new transform.
-#' @param ... Additional arguments passed to \code{\link{computeTransform}}
+#' @param ... Additional arguments passed to \code{Morpho::computeTransform}
 #'
-#' @return A homogeneous affine matrix or a \code{nat::tpsreg} object
-#'   n.b. only in development nat (>= 1.10.1)
+#' @return A homogeneous affine matrix or a \code{nat::tpsreg} object n.b. only
+#'   in development nat (>= 1.10.1)
 #' @export
+#'
+#' @details NB this function relies on installation of the suggested package
+#'   Morpho.
 #'
 #' @examples
 #' \dontrun{
@@ -53,6 +56,7 @@ fit_xform <- function(reg, samplepts, refpts=NULL, type = c("affine","rigid", "s
     refpts=xform(samplepts, reg)
   type=match.arg(type)
   if(length(scale)==1) scale=rep(scale,2)
+  check_package_available("Morpho")
   xt=Morpho::computeTransform(refpts*scale[2], samplepts*scale[1], type=type, ...)
   if(type=='tps') {
     class(xt)=union('tpsreg', class(xt))

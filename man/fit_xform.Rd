@@ -15,18 +15,18 @@ fit_xform(
 )
 }
 \arguments{
-\item{reg}{Any registration compatible with \code{nat::\link{xform}},
+\item{reg}{Any registration compatible with \code{nat::\link[nat]{xform}},
 including non-rigid and multi-step registrations. You must either supply
 this or the \code{refpts} argument.}
 
 \item{samplepts}{A set of points in the sample (floating) space. Can be any
-object compatible with \code{nat::\link{xyzmatrix}}.}
+object compatible with \code{nat::\link[nat]{xyzmatrix}}.}
 
 \item{refpts}{An optional set of points in the target (fixed) space matching
 \code{samplepts}. You must either supply this or the \code{reg} argument.}
 
 \item{type}{A character string specifying the type of registration. See
-\code{\link{computeTransform}} for details.}
+\code{Morpho::computeTransform} for details.}
 
 \item{subsample}{A number of points to subsample from
 \code{samplepts,refpts}. The default value of \code{FALSE} means use all
@@ -38,14 +38,18 @@ transform expects points in microns and returns points in microns then you
 would need \code{scale=c(1000,1)} if you want the input to be in microns
 and the output to be in nm.}
 
-\item{...}{Additional arguments passed to \code{\link{computeTransform}}}
+\item{...}{Additional arguments passed to \code{Morpho::computeTransform}}
 }
 \value{
-A homogeneous affine matrix or a \code{nat::tpsreg} object
-  n.b. only in development nat (>= 1.10.1)
+A homogeneous affine matrix or a \code{nat::tpsreg} object n.b. only
+  in development nat (>= 1.10.1)
 }
 \description{
 Fit affine or thin plate spline transform to arbitrary transformation
+}
+\details{
+NB this function relies on installation of the suggested package
+  Morpho.
 }
 \examples{
 \dontrun{
