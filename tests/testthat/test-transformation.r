@@ -46,6 +46,12 @@ test_that("we can work with reglist objects on disk",{
                xform(pts, solve(m)))
 
   expect_error(add_reglist(sample='rhubarb'), "reference and sample")
+
+  # Regression test: bridging reg where sample brain name ends with "_mirror"
+  # should not be misclassified as a mirror registration
+  add_reglist(reglist(m1, m2), reference = "rhubarb", sample="crumble_mirror")
+  df <- nat.templatebrains:::allreg_dataframe()
+  expect_true(df$bridge[df$name == "rhubarb_crumble_mirror"])
 })
 
 test_that("we can find bridging registrations",{
@@ -84,6 +90,8 @@ context("Bridging Graph")
 test_that("bridging graph and friends work",{
   skip_on_cran()
 
+  # Clear in-memory cache to test empty state
+  nat.templatebrains:::clear_reglist_cache()
   expect_is(emptydf<-allreg_dataframe(NULL), 'data.frame')
   expect_equal(nrow(emptydf), 0L)
 
@@ -184,6 +192,9 @@ test_that("can use a bridging registration in regdirs",{
   if(is.null(cmtk.bindir()))
     skip("skipping transformation tests since CMTK is not installed")
 
+  # Clear in-memory cache for clean test environment
+  nat.templatebrains:::clear_reglist_cache()
+
   td=tempfile(pattern = 'extrabridge')
   dir.create(td)
   on.exit(unlink(td, recursive = TRUE))
@@ -210,7 +221,7 @@ test_that("can use a bridging registration in regdirs",{
                 0, -0.0127625146453663, 0.862393114320825, 0.0848381903456082,
                 0, -0.0314435105710272, 0.135913761768978, 1.46958245308841,
                 0, -105.309000027786, 15.6708999995602, -7.7248100042806, 1),
-              .Dim = c(4L, 4L))
+              dim = c(4L, 4L))
   cmtk.mat2dof(aff, jfrc_is2_reg)
   points=matrix(c(100, 100, 50), ncol=3)
   expect_equal(xform_brain(points, reference='JFRC2',sample='JFRC2', via='IS2', checkboth = T), points)

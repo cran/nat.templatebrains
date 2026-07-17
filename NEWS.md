@@ -1,3 +1,17 @@
+# nat.templatebrains 1.2.3
+
+* Replace deprecated `structure()` special names `.Dim` and `.Names` in
+  bundled data/test fixtures with `dim` and `names` for R-devel.
+
+# nat.templatebrains 1.2.2
+
+* Switch to an in memory cache for temporary registrations, fixing a
+  long-standing bug where long-running R sessions would forget about bridging
+  registrations (#54).
+* Fix new bug: bridging registrations with `_mirror` in the sample brain name
+  were incorrectly classified as mirror registrations when using the in-memory
+  reglist cache (#55)
+
 # nat.templatebrains 1.2.1
 * add missing package anchors as requested by CRAN 
 

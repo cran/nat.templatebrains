@@ -2,7 +2,7 @@ Type: Package
 Package: nat.templatebrains
 Title: NeuroAnatomy Toolbox ('nat') Extension for Handling Template
         Brains
-Version: 1.2.1
+Version: 1.2.3
 Authors@R: 
     c(person(given = "Gregory",
              family = "Jefferis",
@@ -28,10 +28,10 @@ RoxygenNote: 7.3.2
 BugReports: https://github.com/natverse/nat.templatebrains/issues
 Language: en-GB
 NeedsCompilation: no
-Packaged: 2025-08-18 10:58:56 UTC; jefferis
+Packaged: 2026-07-17 16:56:34 UTC; jefferis
 Author: Gregory Jefferis [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-0587-9355>),
   James Manton [aut] (ORCID: <https://orcid.org/0000-0001-9260-3156>)
 Maintainer: Gregory Jefferis <jefferis@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-08-18 11:30:02 UTC
+Date/Publication: 2026-07-17 17:30:07 UTC
